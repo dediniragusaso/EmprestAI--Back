@@ -1,0 +1,149 @@
+// Derivado de docs/modelagem-banco.md (aprovado). Prisma Migrate é o único dono do schema.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  COLABORADOR
+  OPERACOES
+
+  @@map("role")
+}
+
+enum EquipmentCategory {
+  NOTEBOOK
+  MONITOR
+  CABO
+  CAMERA
+  ACESSORIO
+
+  @@map("equipment_category")
+}
+
+enum EquipmentStatus {
+  DISPONIVEL
+  EMPRESTADO
+  MANUTENCAO
+
+  @@map("equipment_status")
+}
+
+model Tenant {
+  id   String @id @default(uuid()) @db.Uuid
+  slug String @unique
+  name String
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  memberships Membership[]
+  equipment   Equipment[]
+  loans       Loan[]
+  auditLogs   AuditLog[]
+
+  @@map("tenants")
+}
+
+/// Espelho de auth.users — id vem do Supabase Auth, mantido por trigger.
+model User {
+  id    String @id @db.Uuid
+  email String @db.Text
+  name  String @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  memberships    Membership[]
+  loansTaken     Loan[]       @relation("LoanBorrower")
+  loansReturned  Loan[]       @relation("LoanReturner")
+  auditLogsActed AuditLog[]   @relation("AuditActor")
+
+  @@index([email])
+  @@map("users")
+}
+
+model Membership {
+  id String @id @default(uuid()) @db.Uuid
+
+  tenantId String @map("tenant_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+  role     Role
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, tenantId])
+  @@index([tenantId])
+  @@map("memberships")
+}
+
+model Equipment {
+  id String @id @default(uuid()) @db.Uuid
+
+  tenantId   String            @map("tenant_id") @db.Uuid
+  name       String            @db.Text
+  category   EquipmentCategory
+  patrimonio String?           @db.Text
+  status     EquipmentStatus   @default(DISPONIVEL)
+  observacao String?           @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  loans  Loan[]
+
+  // Postgres não colide NULL em unique — item sem patrimônio é permitido
+  @@unique([tenantId, patrimonio])
+  @@index([tenantId, status])
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@map("equipment")
+}
+
+model Loan {
+  id String @id @default(uuid()) @db.Uuid
+
+  tenantId         String    @map("tenant_id") @db.Uuid
+  equipmentId      String    @map("equipment_id") @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  openedAt         DateTime  @default(now()) @map("opened_at") @db.Timestamptz(6)
+  dueAt            DateTime  @map("due_at") @db.Date
+  returnedAt       DateTime? @map("returned_at") @db.Timestamptz(6)
+  returnedByUserId String?   @map("returned_by_user_id") @db.Uuid
+
+  tenant     Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  equipment  Equipment @relation(fields: [equipmentId], references: [id], onDelete: Restrict)
+  user       User      @relation("LoanBorrower", fields: [userId], references: [id], onDelete: Restrict)
+  returnedBy User?     @relation("LoanReturner", fields: [returnedByUserId], references: [id], onDelete: SetNull)
+
+  // Índices parciais (só abertos) e CHECK de returned_at/returned_by são SQL bruto na migration.
+  @@index([tenantId, openedAt(sort: Desc)])
+  @@map("loans")
+}
+
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+
+  tenantId     String  @map("tenant_id") @db.Uuid
+  actorUserId  String? @map("actor_user_id") @db.Uuid
+  action       String  @db.Text
+  resourceType String  @map("resource_type") @db.Text
+  resourceId   String  @map("resource_id") @db.Uuid
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  actor  User?  @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, resourceType, resourceId])
+  @@map("audit_logs")
+}
