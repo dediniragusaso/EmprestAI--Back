@@ -23,6 +23,7 @@ describe('JwtVerifierService', () => {
     process.env.SUPABASE_URL = 'http://localhost:54321';
     process.env.SUPABASE_JWKS_URL = 'http://localhost:54321/auth/v1/.well-known/jwks.json';
     process.env.CORS_ORIGIN = 'http://localhost:5173';
+    process.env.DATABASE_URL = 'postgresql://u:p@localhost:5432/x';
     const jwk = { ...publicKey.export({ format: 'jwk' }), kid: 'k1' };
     jest.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(JSON.stringify({ keys: [jwk] })));
   });

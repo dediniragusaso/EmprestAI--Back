@@ -6,6 +6,8 @@ const schema = z.object({
   SUPABASE_URL: z.string().url(),
   SUPABASE_JWKS_URL: z.string().url(),
   CORS_ORIGIN: z.string().min(1),
+  // Conexão de runtime pelo pooler (ADR-001 §5); o Prisma a lê por conta própria.
+  DATABASE_URL: z.string().min(1),
 });
 
 export type Env = z.infer<typeof schema>;
