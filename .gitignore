@@ -6,3 +6,6 @@ coverage/
 !.env.example
 .vercel/
 *.log
+
+# Area de preparo das imagens de equipamentos (skill imagens-equipamentos)
+.preparo-imagens/

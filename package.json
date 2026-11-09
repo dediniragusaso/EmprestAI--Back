@@ -11,7 +11,10 @@
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "imagens:preparar": "node --env-file-if-exists=.env scripts/imagens-equipamentos/preparar.mjs",
+    "imagens:validar": "node scripts/imagens-equipamentos/validar.mjs",
+    "imagens:enviar": "node --env-file-if-exists=.env scripts/imagens-equipamentos/enviar.mjs"
   },
   "jest": {
     "preset": "ts-jest",

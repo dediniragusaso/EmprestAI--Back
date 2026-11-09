@@ -1,0 +1,14 @@
+[
+  { "patrimonio": "TI-0001", "nome": "Notebook 14 polegadas", "categoria": "notebook", "situacao": "disponivel", "busca": "laptop on white desk" },
+  { "patrimonio": "TI-0002", "nome": "Notebook 15 polegadas", "categoria": "notebook", "situacao": "disponivel", "busca": "open laptop minimal desk" },
+  { "patrimonio": "TI-0003", "nome": "Notebook 13 polegadas", "categoria": "notebook", "situacao": "disponivel", "busca": "laptop closeup keyboard" },
+  { "patrimonio": "TI-0004", "nome": "Notebook 15 polegadas", "categoria": "notebook", "situacao": "manutencao", "busca": "closed laptop on table" },
+  { "patrimonio": "TI-0005", "nome": "Monitor 24 polegadas", "categoria": "monitor", "situacao": "disponivel", "busca": "computer monitor on desk" },
+  { "patrimonio": "TI-0006", "nome": "Monitor 27 polegadas", "categoria": "monitor", "situacao": "disponivel", "busca": "monitor screen office desk" },
+  { "patrimonio": "TI-0007", "nome": "Monitor 22 polegadas", "categoria": "monitor", "situacao": "manutencao", "busca": "black computer screen" },
+  { "patrimonio": "TI-0008", "nome": "Cabo HDMI 2 m", "categoria": "cabo", "situacao": "disponivel", "busca": "hdmi cable" },
+  { "patrimonio": "TI-0009", "nome": "Cabo USB-C 1 m", "categoria": "cabo", "situacao": "disponivel", "busca": "usb cable white background" },
+  { "patrimonio": "TI-0010", "nome": "Cabo de rede 3 m", "categoria": "cabo", "situacao": "manutencao", "busca": "ethernet cable" },
+  { "patrimonio": "TI-0011", "nome": "Webcam Full HD", "categoria": "camera", "situacao": "disponivel", "busca": "webcam" },
+  { "patrimonio": "TI-0012", "nome": "Câmera compacta", "categoria": "camera", "situacao": "disponivel", "busca": "compact camera on table" }
+]
