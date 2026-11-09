@@ -1,14 +1,14 @@
 [
   { "patrimonio": "TI-0001", "nome": "Notebook 14 polegadas", "categoria": "notebook", "situacao": "disponivel", "busca": "laptop isolated white background", "buscaOriginal": "laptop on white desk" },
   { "patrimonio": "TI-0002", "nome": "Notebook 15 polegadas", "categoria": "notebook", "situacao": "disponivel", "busca": "open laptop minimal desk" },
-  { "patrimonio": "TI-0003", "nome": "Notebook 13 polegadas", "categoria": "notebook", "situacao": "disponivel", "busca": "laptop back view on desk", "buscaOriginal": "laptop closeup keyboard" },
-  { "patrimonio": "TI-0004", "nome": "Notebook 15 polegadas", "categoria": "notebook", "situacao": "manutencao", "busca": "closed laptop top view", "buscaOriginal": "closed laptop on table" },
+  { "patrimonio": "TI-0003", "nome": "Notebook 13 polegadas", "categoria": "notebook", "situacao": "disponivel", "busca": "laptop lid back view white background", "buscaOriginal": "laptop closeup keyboard" },
+  { "patrimonio": "TI-0004", "nome": "Notebook 15 polegadas", "categoria": "notebook", "situacao": "manutencao", "busca": "closed laptop isolated white background", "buscaOriginal": "closed laptop on table" },
   { "patrimonio": "TI-0005", "nome": "Monitor 24 polegadas", "categoria": "monitor", "situacao": "disponivel", "busca": "turned off computer monitor isolated", "buscaOriginal": "computer monitor on desk" },
-  { "patrimonio": "TI-0006", "nome": "Monitor 27 polegadas", "categoria": "monitor", "situacao": "disponivel", "busca": "blank computer monitor white background", "buscaOriginal": "monitor screen office desk" },
-  { "patrimonio": "TI-0007", "nome": "Monitor 22 polegadas", "categoria": "monitor", "situacao": "manutencao", "busca": "black monitor screen off", "buscaOriginal": "black computer screen" },
+  { "patrimonio": "TI-0006", "nome": "Monitor 27 polegadas", "categoria": "monitor", "situacao": "disponivel", "busca": "lcd computer monitor front view isolated", "buscaOriginal": "monitor screen office desk" },
+  { "patrimonio": "TI-0007", "nome": "Monitor 22 polegadas", "categoria": "monitor", "situacao": "manutencao", "busca": "black computer monitor isolated", "buscaOriginal": "black computer screen" },
   { "patrimonio": "TI-0008", "nome": "Cabo HDMI 2 m", "categoria": "cabo", "situacao": "disponivel", "busca": "hdmi cable" },
   { "patrimonio": "TI-0009", "nome": "Cabo USB-C 1 m", "categoria": "cabo", "situacao": "disponivel", "busca": "usb cable white background" },
   { "patrimonio": "TI-0010", "nome": "Cabo de rede 3 m", "categoria": "cabo", "situacao": "manutencao", "busca": "ethernet cable" },
-  { "patrimonio": "TI-0011", "nome": "Webcam Full HD", "categoria": "camera", "situacao": "disponivel", "busca": "webcam isolated white background", "buscaOriginal": "webcam" },
-  { "patrimonio": "TI-0012", "nome": "Câmera compacta", "categoria": "camera", "situacao": "disponivel", "busca": "compact digital camera isolated", "buscaOriginal": "compact camera on table" }
+  { "patrimonio": "TI-0011", "nome": "Webcam Full HD", "categoria": "camera", "situacao": "disponivel", "busca": "usb webcam camera isolated", "buscaOriginal": "webcam" },
+  { "patrimonio": "TI-0012", "nome": "Câmera compacta", "categoria": "camera", "situacao": "disponivel", "busca": "point and shoot compact camera white background", "buscaOriginal": "compact camera on table" }
 ]
