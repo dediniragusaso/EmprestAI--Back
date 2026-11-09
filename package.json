@@ -21,7 +21,11 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "rootDir": "src",
+    "rootDir": ".",
+    "roots": [
+      "<rootDir>/src",
+      "<rootDir>/prisma"
+    ],
     "testRegex": ".*\\.spec\\.ts$"
   },
   "dependencies": {
@@ -36,14 +40,14 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@testcontainers/postgresql": "12.0.4",
+    "@testcontainers/postgresql": "12.0.1",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.5",
     "jest": "^30.5.2",
     "prisma": "^6.19.3",
     "sharp": "0.35.5",
-    "testcontainers": "12.0.4",
+    "testcontainers": "12.0.1",
     "ts-jest": "^29.4.15",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
