@@ -60,8 +60,26 @@ async function baixar(url) {
   return Buffer.from(await resposta.arrayBuffer());
 }
 
+// --escolher=TI-0001:<id> (repetivel): fixa a foto de um equipamento, desde que ela
+// esteja no resultado da busca original e passe todas as checagens abaixo.
+const forcados = new Map(
+  process.argv
+    .filter((a) => a.startsWith('--escolher='))
+    .map((a) => a.slice('--escolher='.length).split(':')),
+);
+
+// --pular=TI-0005,TI-0006: equipamentos sem candidata aceitavel; ficam sem foto (e sem arquivo).
+const pulados = new Set(
+  process.argv
+    .filter((a) => a.startsWith('--pular='))
+    .flatMap((a) => a.slice('--pular='.length).split(',').filter(Boolean)),
+);
+
 async function escolher(equip, usados, reprovados) {
-  const { hits, doCache } = await buscar(equip);
+  const { hits: todos, doCache } = await buscar(equip);
+  const forcado = forcados.get(equip.patrimonio);
+  const hits = forcado ? todos.filter((h) => String(h.id) === forcado) : todos;
+  if (forcado && !hits.length) throw new Error(`${equip.patrimonio}: id ${forcado} nao esta no resultado da busca`);
   const log = [];
   let downloads = 0;
   for (const hit of hits) {
@@ -143,6 +161,8 @@ async function main() {
     if (!item) continue;
     const id = String(item.pixabay?.id);
     const arquivo = path.join(FINAL_DIR, `${equip.patrimonio}.jpg`);
+    const forcado = forcados.get(equip.patrimonio);
+    if (forcado && forcado !== id) continue; // fixada outra foto: refaz
     if (reprovados.has(id) || usados.has(id) || !(await existe(arquivo))) continue;
     mantidos.set(equip.patrimonio, item);
     usados.set(id, equip.patrimonio);
@@ -151,6 +171,11 @@ async function main() {
   const itens = [];
   const falhas = [];
   for (const equip of equipamentos) {
+    if (pulados.has(equip.patrimonio)) {
+      await rm(path.join(FINAL_DIR, `${equip.patrimonio}.jpg`), { force: true });
+      console.log(`${equip.patrimonio}: PULADO (sem candidata aceitavel; ficou sem foto)`);
+      continue;
+    }
     if (mantidos.has(equip.patrimonio)) {
       itens.push(mantidos.get(equip.patrimonio));
       console.log(`${equip.patrimonio}: mantida (id ${mantidos.get(equip.patrimonio).pixabay.id})`);
