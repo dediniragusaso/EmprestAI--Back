@@ -51,7 +51,7 @@ export async function gravarEquipamentos(
           status: item.status,
           ...imagem,
         },
-        update: { name: item.nome, category: item.categoria, status: item.status, ...imagem, updatedAt: new Date() },
+        update: { name: item.nome, category: item.categoria, ...imagem, updatedAt: new Date() },
       });
     }),
   );
