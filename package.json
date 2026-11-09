@@ -14,6 +14,7 @@
     "db:seed": "prisma db seed",
     "imagens:preparar": "node --env-file-if-exists=.env scripts/imagens-equipamentos/preparar.mjs",
     "imagens:validar": "node scripts/imagens-equipamentos/validar.mjs",
+    "imagens:creditos": "node scripts/imagens-equipamentos/creditos.mjs",
     "imagens:enviar": "node --env-file-if-exists=.env scripts/imagens-equipamentos/enviar.mjs"
   },
   "jest": {
