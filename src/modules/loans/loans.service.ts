@@ -34,7 +34,9 @@ export class LoansService {
     const agora = this.clock.now();
     const hoje = todayInSaoPaulo(agora);
     return this.prisma.$transaction(async (tx) => {
-      const eq = await this.loans.buscarEquipamento(tx, ctx.tenantId, equipmentId);
+      // R9: primeiro o lock da pessoa (serializa o limite de 3), depois o da linha do equipamento.
+      await this.loans.travarPessoa(tx, ctx.tenantId, ctx.userId);
+      const eq = await this.loans.buscarEquipamentoTravado(tx, ctx.tenantId, equipmentId);
       if (!eq) throw new NotFoundException('Equipamento nao encontrado.');
 
       if (eq.status === 'MANUTENCAO') throw new LoanRefusalException('equipment-unavailable');
@@ -53,13 +55,22 @@ export class LoansService {
         throw new LoanRefusalException('loan-limit-reached');
       }
 
-      const loan = await this.loans.inserir(tx, {
-        tenantId: ctx.tenantId,
-        equipmentId: eq.id,
-        userId: ctx.userId,
-        openedAt: agora,
-        dueAt: dateOnly(addDays(hoje, LOAN_DAYS)),
-      });
+      let loan;
+      try {
+        loan = await this.loans.inserir(tx, {
+          tenantId: ctx.tenantId,
+          equipmentId: eq.id,
+          userId: ctx.userId,
+          openedAt: agora,
+          dueAt: dateOnly(addDays(hoje, LOAN_DAYS)),
+        });
+      } catch (erro) {
+        // Rede de seguranca (R9): o indice unico parcial barrou um segundo emprestimo aberto do item.
+        if (LoansRepository.violouUmAbertoPorEquipamento(erro)) {
+          throw new LoanRefusalException('equipment-already-loaned');
+        }
+        throw erro;
+      }
       if ((await this.loans.marcarEmprestado(tx, ctx.tenantId, eq.id)) !== 1) {
         throw new LoanRefusalException('equipment-already-loaned');
       }

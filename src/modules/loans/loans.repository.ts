@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { EquipmentStatus, Prisma } from '@prisma/client';
+import { Prisma, type EquipmentStatus } from '@prisma/client';
 import { dateOnly } from '../../common/clock';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -23,12 +23,32 @@ export class LoansRepository {
     return n > 0;
   }
 
-  /** Equipamento do tenant (outro tenant ou id inexistente: null). */
-  buscarEquipamento(db: Db, tenantId: string, id: string) {
-    return db.equipment.findFirst({
-      where: { id, tenantId },
-      select: { id: true, name: true, patrimonio: true, status: true },
-    });
+  /**
+   * R9(b): serializa os pedidos da mesma pessoa. Lock de TRANSACAO (liberado no commit/rollback;
+   * compativel com o pooler em modo transacao). Deve ser o primeiro lock da transacao: a ordem de
+   * lock e sempre pessoa -> equipamento, para nao haver deadlock.
+   */
+  async travarPessoa(tx: Prisma.TransactionClient, tenantId: string, userId: string): Promise<void> {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${tenantId} || ':' || ${userId}, 0))`;
+  }
+
+  /**
+   * Equipamento do tenant, com a linha TRAVADA (`FOR UPDATE`) ate o fim da transacao (R9(a)): o
+   * segundo pedido espera e le o status ja mudado. Outro tenant ou id inexistente: null.
+   */
+  async buscarEquipamentoTravado(tx: Prisma.TransactionClient, tenantId: string, id: string) {
+    const linhas = await tx.$queryRaw<
+      { id: string; name: string; patrimonio: string | null; status: EquipmentStatus }[]
+    >`SELECT id::text AS id, name, patrimonio, status::text AS status
+        FROM equipment
+       WHERE id = ${id}::uuid AND tenant_id = ${tenantId}::uuid
+         FOR UPDATE`;
+    return linhas[0] ?? null;
+  }
+
+  /** O `INSERT` violou o indice unico parcial `loans_one_open_per_equipment`? (rede de seguranca, R9) */
+  static violouUmAbertoPorEquipamento(erro: unknown): boolean {
+    return erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === 'P2002';
   }
 
   /** Dono do emprestimo aberto do equipamento, se houver. */
