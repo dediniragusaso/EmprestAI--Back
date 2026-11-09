@@ -95,6 +95,13 @@ model Equipment {
   status     EquipmentStatus   @default(DISPONIVEL)
   observacao String?           @db.Text
 
+  // Foto do equipamento (spec 002-dados-iniciais): origem, autor e licença no Pixabay.
+  imageUrl       String? @map("image_url") @db.Text
+  imagePixabayId Int?    @map("image_pixabay_id")
+  imageAuthor    String? @map("image_author") @db.Text
+  imagePageUrl   String? @map("image_page_url") @db.Text
+  imageLicense   String? @map("image_license") @db.Text
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(6)
 
@@ -103,6 +110,8 @@ model Equipment {
 
   // Postgres não colide NULL em unique — item sem patrimônio é permitido
   @@unique([tenantId, patrimonio])
+  // Uma foto do Pixabay por equipamento dentro do tenant; item sem foto não colide.
+  @@unique([tenantId, imagePixabayId])
   @@index([tenantId, status])
   @@index([tenantId, createdAt(sort: Desc)])
   @@map("equipment")
