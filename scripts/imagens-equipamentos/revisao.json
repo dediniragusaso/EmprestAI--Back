@@ -4,6 +4,7 @@
   "1853259": { "status": "reprovada", "motivo": "TI-0002: logo legível (Apple na tampa)" },
   "886462": { "status": "reprovada", "motivo": "TI-0003: texto e logo legíveis (teclas e logo do Windows)" },
   "594090": { "status": "reprovada", "motivo": "TI-0004: pessoas e fora de tema (reunião)" },
+  "785742": { "status": "reprovada", "motivo": "TI-0003: texto legível (letras das teclas)" },
   "4532323": { "status": "reprovada", "motivo": "TI-0005: logo legível (Apple no monitor)" },
   "1868496": { "status": "reprovada", "motivo": "TI-0006: logo legível (Apple) e tela com conteúdo" },
   "6801334": { "status": "reprovada", "motivo": "TI-0007: fora de tema (celular, tablet e notebook)" },
