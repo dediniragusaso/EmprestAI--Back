@@ -60,13 +60,48 @@ async function baixar(url) {
   return Buffer.from(await resposta.arrayBuffer());
 }
 
-// --escolher=TI-0001:<id> (repetivel): fixa a foto de um equipamento, desde que ela
-// esteja no resultado da busca original e passe todas as checagens abaixo.
+// --escolher=TI-0001:<id> (repetivel): fixa a foto de um equipamento. Se o id nao estiver
+// no resultado da busca, consulta-o na mesma API do Pixabay (parametro id). Passa por todas
+// as checagens abaixo (origem >= 800x600, id nao reprovado, id nao repetido).
 const forcados = new Map(
   process.argv
     .filter((a) => a.startsWith('--escolher='))
     .map((a) => a.slice('--escolher='.length).split(':')),
 );
+
+// --posicao=TI-0011:west (repetivel): posicao do recorte "cover" do sharp (padrao: centre).
+// Muda so o que sai do enquadramento; a imagem nunca e esticada.
+const POSICOES = new Set([
+  'centre', 'center', 'north', 'northeast', 'east', 'southeast', 'south', 'southwest', 'west', 'northwest',
+  'top', 'right', 'bottom', 'left', 'right top', 'right bottom', 'left bottom', 'left top',
+  'entropy', 'attention',
+]);
+const posicoes = new Map(
+  process.argv
+    .filter((a) => a.startsWith('--posicao='))
+    .map((a) => a.slice('--posicao='.length).split(':')),
+);
+for (const [pat, pos] of posicoes) {
+  if (!POSICOES.has(pos)) falhar(`--posicao=${pat}:${pos} invalida. Use: ${[...POSICOES].join(', ')}`);
+}
+
+async function buscarPorId(id) {
+  const parametros = `id=${encodeURIComponent(id)}`;
+  const arquivoCache = path.join(CACHE_DIR, `${createHash('sha1').update(parametros).digest('hex')}.json`);
+  if (await existe(arquivoCache)) {
+    const cache = await lerJson(arquivoCache);
+    if (Date.now() - cache.buscadoEm < CACHE_MS) return cache.hits[0] ?? null;
+  }
+  const resposta = await fetch(`${API}?key=${encodeURIComponent(chaveApi)}&${parametros}`, {
+    headers: { Accept: 'application/json' },
+  });
+  if (resposta.status === 429) throw new Error('Pixabay 429 (limite de requisicoes)');
+  if (!resposta.ok) throw new Error(`Pixabay respondeu HTTP ${resposta.status}`);
+  const json = await resposta.json();
+  await mkdir(CACHE_DIR, { recursive: true });
+  await writeFile(arquivoCache, JSON.stringify({ buscadoEm: Date.now(), hits: json.hits }));
+  return json.hits[0] ?? null;
+}
 
 // --pular=TI-0005,TI-0006: equipamentos sem candidata aceitavel; ficam sem foto (e sem arquivo).
 const pulados = new Set(
@@ -78,8 +113,12 @@ const pulados = new Set(
 async function escolher(equip, usados, reprovados) {
   const { hits: todos, doCache } = await buscar(equip);
   const forcado = forcados.get(equip.patrimonio);
-  const hits = forcado ? todos.filter((h) => String(h.id) === forcado) : todos;
-  if (forcado && !hits.length) throw new Error(`${equip.patrimonio}: id ${forcado} nao esta no resultado da busca`);
+  let hits = forcado ? todos.filter((h) => String(h.id) === forcado) : todos;
+  if (forcado && !hits.length) {
+    const porId = await buscarPorId(forcado);
+    if (!porId) throw new Error(`${equip.patrimonio}: id ${forcado} nao existe no Pixabay`);
+    hits = [porId];
+  }
   const log = [];
   let downloads = 0;
   for (const hit of hits) {
@@ -106,9 +145,10 @@ async function escolher(equip, usados, reprovados) {
       continue;
     }
 
+    const posicao = posicoes.get(equip.patrimonio) ?? 'centre';
     const saida = await sharp(origem)
       .rotate()
-      .resize(LARGURA, ALTURA, { fit: 'cover', position: 'centre' })
+      .resize(LARGURA, ALTURA, { fit: 'cover', position: posicao })
       .jpeg({ quality: 85 })
       .toBuffer();
     const arquivo = path.join(FINAL_DIR, `${equip.patrimonio}.jpg`);
@@ -138,6 +178,7 @@ async function escolher(equip, usados, reprovados) {
         },
         licenca: LICENCA,
         arquivo: `final/${equip.patrimonio}.jpg`,
+        recorte: { fit: 'cover', posicao },
         dimensoes: { width: dim.width, height: dim.height },
         sha256: createHash('sha256').update(saida).digest('hex'),
         preparadoEm: new Date().toISOString(),
@@ -163,6 +204,11 @@ async function main() {
     const arquivo = path.join(FINAL_DIR, `${equip.patrimonio}.jpg`);
     const forcado = forcados.get(equip.patrimonio);
     if (forcado && forcado !== id) continue; // fixada outra foto: refaz
+    const posicao = posicoes.get(equip.patrimonio);
+    if (posicao && (item.recorte?.posicao ?? 'centre') !== posicao) {
+      forcados.set(equip.patrimonio, id); // mesma foto, outro recorte: refaz
+      continue;
+    }
     if (reprovados.has(id) || usados.has(id) || !(await existe(arquivo))) continue;
     mantidos.set(equip.patrimonio, item);
     usados.set(id, equip.patrimonio);
