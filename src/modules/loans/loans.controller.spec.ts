@@ -218,4 +218,90 @@ describe('POST /v1/loans', () => {
     expect((await pedir(u, e.id)).status).toBe(409); // ja emprestado (a ele mesmo)
     expect(await auditorias()).toBe(antes);
   });
+
+  describe('GET /v1/loans/mine', () => {
+    const meus = (u: Usuario, query: object = {}) =>
+      t.http().get('/v1/loans/mine').query(query).set('Authorization', `Bearer ${u.token}`);
+
+    it('CA-15: devolve so os abertos da pessoa, por dueAt crescente, com state e contagem; de outra pessoa nao aparece', async () => {
+      const eu = await t.criarUsuario('A');
+      const outra = await t.criarUsuario('A');
+      const a = await t.criarEquipamento('A', { name: 'Item A', patrimonio: 'M-0001' });
+      const b = await t.criarEquipamento('A', { name: 'Item B', patrimonio: 'M-0002' });
+      const c = await t.criarEquipamento('A', { name: 'Item C', patrimonio: 'M-0003' });
+      const dela = await t.criarEquipamento('A');
+      await t.semearEmprestimo({ userId: eu.id, equipmentId: a.id, dueAt: '2026-11-25' });
+      await t.semearEmprestimo({ userId: eu.id, equipmentId: b.id, dueAt: '2026-11-08' });
+      await t.semearEmprestimo({ userId: eu.id, equipmentId: c.id, dueAt: '2026-11-09' });
+      await t.semearEmprestimo({ userId: outra.id, equipmentId: dela.id, dueAt: '2026-11-01' });
+
+      const res = await meus(eu);
+      expect(res.status).toBe(200);
+      const nomes = res.body.items.map((i: { equipment: { name: string } }) => i.equipment.name);
+      expect(nomes).toEqual(['Item B', 'Item C', 'Item A']);
+      expect(res.body.items.map((i: { state: string }) => i.state)).toEqual(['EM_ATRASO', 'EM_DIA', 'EM_DIA']);
+      expect(res.body.items[0]).toMatchObject({
+        dueAt: '2026-11-08',
+        equipment: { id: b.id, name: 'Item B', patrimonio: 'M-0002', category: 'ACESSORIO', imageUrl: null },
+      });
+      expect(Object.keys(res.body.items[0]).sort()).toEqual(['dueAt', 'equipment', 'id', 'openedAt', 'state']);
+      expect(res.body).toMatchObject({ openLoans: 3, maxLoans: 3, nextCursor: null });
+      expect(JSON.stringify(res.body)).not.toContain(outra.id);
+    });
+
+    it('CA-15: a pessoa com papel OPERACOES tambem ve so os proprios emprestimos', async () => {
+      const ops = await t.criarUsuario('A', 'OPERACOES');
+      const outra = await t.criarUsuario('A');
+      const meu = await t.criarEquipamento('A');
+      const dela = await t.criarEquipamento('A');
+      await t.semearEmprestimo({ userId: ops.id, equipmentId: meu.id, dueAt: '2026-11-20' });
+      await t.semearEmprestimo({ userId: outra.id, equipmentId: dela.id, dueAt: '2026-11-20' });
+      const res = await meus(ops);
+      expect(res.body.items).toHaveLength(1);
+      expect(res.body.items[0].equipment.id).toBe(meu.id);
+    });
+
+    it('CA-15: sem emprestimo devolve lista vazia e openLoans 0; o cursor percorre sem repetir', async () => {
+      const vazio = await t.criarUsuario('A');
+      expect((await meus(vazio)).body).toMatchObject({ items: [], openLoans: 0, maxLoans: 3, nextCursor: null });
+
+      const u = await t.criarUsuario('A');
+      const ids: string[] = [];
+      for (let i = 0; i < 3; i += 1) {
+        const e = await t.criarEquipamento('A');
+        // mesmo dueAt nos tres: o desempate e por id
+        const loan = await t.semearEmprestimo({ userId: u.id, equipmentId: e.id, dueAt: '2026-11-20' });
+        ids.push(loan.id);
+      }
+      const p1 = await meus(u, { limit: 2 });
+      expect(p1.body.items).toHaveLength(2);
+      expect(p1.body.nextCursor).not.toBeNull();
+      const p2 = await meus(u, { limit: 2, cursor: p1.body.nextCursor });
+      expect(p2.body.items).toHaveLength(1);
+      expect(p2.body.nextCursor).toBeNull();
+      const vistos = [...p1.body.items, ...p2.body.items].map((i: { id: string }) => i.id);
+      expect(new Set(vistos)).toEqual(new Set(ids));
+      expect((await meus(u, { cursor: 'invalido' })).status).toBe(400);
+    });
+
+    it('CA-13: emprestimo da mesma pessoa em outro tenant nao aparece', async () => {
+      const u = await t.criarUsuario('A');
+      await t.prisma.membership.create({ data: { userId: u.id, tenantId: t.tenantB, role: 'COLABORADOR' } });
+      const doB = await t.criarEquipamento('B', { name: 'Item do B' });
+      await t.semearEmprestimo({ userId: u.id, equipmentId: doB.id, tenantId: t.tenantB, dueAt: '2026-11-20' });
+      const res = await meus(u);
+      expect(res.status).toBe(200);
+      expect(res.body.items).toEqual([]);
+      expect(res.body.openLoans).toBe(0);
+    });
+
+    it('CA-14: sem token e 401; sem vinculo ou so com outro tenant e 403', async () => {
+      expect((await t.http().get('/v1/loans/mine')).status).toBe(401);
+      for (const u of [await t.criarUsuario(null), await t.criarUsuario('B')]) {
+        const res = await meus(u);
+        expect(res.status).toBe(403);
+        expect(res.type).toBe('application/problem+json');
+      }
+    });
+  });
 });

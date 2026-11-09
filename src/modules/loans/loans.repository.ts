@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma, type EquipmentStatus } from '@prisma/client';
 import { dateOnly } from '../../common/clock';
+import type { CursorEmprestimo } from './loans.schemas';
 import { PrismaService } from '../prisma/prisma.service';
 
 type Db = Prisma.TransactionClient | PrismaService;
@@ -49,6 +50,26 @@ export class LoansRepository {
   /** O `INSERT` violou o indice unico parcial `loans_one_open_per_equipment`? (rede de seguranca, R9) */
   static violouUmAbertoPorEquipamento(erro: unknown): boolean {
     return erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === 'P2002';
+  }
+
+  /** Uma pagina dos emprestimos ABERTOS da pessoa (limit + 1 linhas), por dueAt crescente e id. */
+  listarAbertosDaPessoa(tenantId: string, userId: string, limit: number, cursor?: CursorEmprestimo) {
+    const depois = cursor
+      ? {
+          OR: [
+            { dueAt: { gt: dateOnly(cursor.d) } },
+            { dueAt: dateOnly(cursor.d), id: { gt: cursor.i } },
+          ],
+        }
+      : {};
+    return this.prisma.loan.findMany({
+      where: { tenantId, userId, returnedAt: null, ...depois },
+      orderBy: [{ dueAt: 'asc' }, { id: 'asc' }],
+      take: limit + 1,
+      include: {
+        equipment: { select: { id: true, name: true, patrimonio: true, category: true, imageUrl: true } },
+      },
+    });
   }
 
   /** Dono do emprestimo aberto do equipamento, se houver. */

@@ -6,6 +6,7 @@ import { AuditRepository } from './audit.repository';
 import { LoanRefusalException, MENSAGENS_RECUSA } from './loan-refusal.exception';
 import { LOAN_DAYS, MAX_OPEN_LOANS } from './loan-rules';
 import { LoansRepository } from './loans.repository';
+import { codificarCursorEmprestimo, type CursorEmprestimo, type MeusEmprestimosDto } from './loans.schemas';
 
 export interface EmprestimoCriadoDto {
   id: string;
@@ -91,5 +92,36 @@ export class LoansService {
         dueAt: loan.dueAt.toISOString().slice(0, 10),
       };
     });
+  }
+
+  /** Spec 003, R10: so os abertos da pessoa logada, no tenant, com o estado calculado contra o "hoje" do servidor. */
+  async meus(ctx: TenantCtx, limit: number, cursor?: CursorEmprestimo): Promise<MeusEmprestimosDto> {
+    const hoje = todayInSaoPaulo(this.clock.now());
+    const linhas = await this.loans.listarAbertosDaPessoa(ctx.tenantId, ctx.userId, limit, cursor);
+    const temMais = linhas.length > limit;
+    const pagina = temMais ? linhas.slice(0, limit) : linhas;
+    const items = pagina.map((l) => {
+      const dueAt = l.dueAt.toISOString().slice(0, 10);
+      return {
+        id: l.id,
+        equipment: {
+          id: l.equipment.id,
+          name: l.equipment.name,
+          patrimonio: l.equipment.patrimonio,
+          category: l.equipment.category,
+          imageUrl: l.equipment.imageUrl,
+        },
+        openedAt: l.openedAt.toISOString(),
+        dueAt,
+        state: dueAt < hoje ? ('EM_ATRASO' as const) : ('EM_DIA' as const),
+      };
+    });
+    const ultimo = items[items.length - 1];
+    return {
+      items,
+      nextCursor: temMais && ultimo ? codificarCursorEmprestimo({ d: ultimo.dueAt, i: ultimo.id }) : null,
+      openLoans: await this.loans.contarAbertos(ctx.tenantId, ctx.userId),
+      maxLoans: MAX_OPEN_LOANS,
+    };
   }
 }
