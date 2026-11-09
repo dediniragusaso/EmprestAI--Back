@@ -1,5 +1,12 @@
 {
   "494649": { "status": "aprovada" },
+  "1881": { "status": "aprovada" },
+  "791032": { "status": "aprovada" },
+  "1140699": { "status": "aprovada" },
+  "17894": { "status": "aprovada" },
+  "17768": { "status": "aprovada" },
+  "1827": { "status": "aprovada" },
+  "4498743": { "status": "aprovada" },
   "7188564": { "status": "reprovada", "motivo": "TI-0001: fora de tema (xícara de café)" },
   "1853259": { "status": "reprovada", "motivo": "TI-0002: logo legível (Apple na tampa)" },
   "886462": { "status": "reprovada", "motivo": "TI-0003: texto e logo legíveis (teclas e logo do Windows)" },
