@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "db:seed": "prisma db seed",
+    "db:dados-iniciais": "node --env-file-if-exists=.env -r ts-node/register prisma/dados-iniciais.ts",
     "imagens:preparar": "node --env-file-if-exists=.env scripts/imagens-equipamentos/preparar.mjs",
     "imagens:validar": "node scripts/imagens-equipamentos/validar.mjs",
     "imagens:creditos": "node scripts/imagens-equipamentos/creditos.mjs",
