@@ -244,7 +244,8 @@ describe('POST /v1/loans', () => {
         dueAt: '2026-11-08',
         equipment: { id: b.id, name: 'Item B', patrimonio: 'M-0002', category: 'ACESSORIO', imageUrl: null },
       });
-      expect(Object.keys(res.body.items[0]).sort()).toEqual(['dueAt', 'equipment', 'id', 'openedAt', 'state']);
+      expect(Object.keys(res.body.items[0]).sort()).toEqual(['dueAt', 'equipment', 'id', 'openedAt', 'openedOn', 'state']);
+      expect(res.body.items[0].openedOn).toBe('2026-11-09'); // relogio do teste: 12:00 em Brasilia
       expect(res.body).toMatchObject({ openLoans: 3, maxLoans: 3, nextCursor: null });
       expect(JSON.stringify(res.body)).not.toContain(outra.id);
     });

@@ -112,6 +112,8 @@ export class LoansService {
           imageUrl: l.equipment.imageUrl,
         },
         openedAt: l.openedAt.toISOString(),
+        // Data civil da retirada em Brasilia, do servidor: a tela formata, nao converte fuso (R8).
+        openedOn: todayInSaoPaulo(l.openedAt),
         dueAt,
         state: dueAt < hoje ? ('EM_ATRASO' as const) : ('EM_DIA' as const),
       };

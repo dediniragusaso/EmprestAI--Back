@@ -51,6 +51,8 @@ export interface MeuEmprestimoDto {
     imageUrl: string | null;
   };
   openedAt: string;
+  /** Data civil da retirada (YYYY-MM-DD, America/Sao_Paulo). */
+  openedOn: string;
   dueAt: string;
   state: 'EM_DIA' | 'EM_ATRASO';
 }
